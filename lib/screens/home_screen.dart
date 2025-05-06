@@ -144,9 +144,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 top: Radius.circular(12),
                               ),
                               image: DecorationImage(
-                                image: NetworkImage(career.imageUrl.isEmpty
+                                image: NetworkImage(career.imagePath?.isEmpty ?? true
                                     ? 'https://via.placeholder.com/150'
-                                    : career.imageUrl),
+                                    : career.imagePath!),
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -277,9 +277,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   top: Radius.circular(12),
                                 ),
                                 image: DecorationImage(
-                                  image: NetworkImage(career.imageUrl.isEmpty
-                                      ? 'https://via.placeholder.com/150'
-                                      : career.imageUrl),
+                                  image: NetworkImage(career.imagePath?.isEmpty
+                                      ?? true ? 'https://via.placeholder.com/150'
+                                      : career.imagePath!),
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -350,9 +350,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                           image: DecorationImage(
-                            image: NetworkImage(career.imageUrl.isEmpty
+                            image: NetworkImage(career.imagePath?.isEmpty ?? true
                                 ? 'https://via.placeholder.com/150'
-                                : career.imageUrl),
+                                : career.imagePath!),
                             fit: BoxFit.cover,
                           ),
                         ),

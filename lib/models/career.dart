@@ -11,6 +11,8 @@ class Career {
   final String? audioPath;
   final String? createdAt;
   final String? updatedAt;
+  final List<String>? tools;
+  final String? deviceFeature;
 
   Career({
     required this.id,
@@ -25,6 +27,8 @@ class Career {
     this.audioPath,
     this.createdAt,
     this.updatedAt,
+    this.tools,
+    this.deviceFeature,
   });
 
   factory Career.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,8 @@ class Career {
       audioPath: json['audio_path']?.toString(),
       createdAt: json['created_at']?.toString(),
       updatedAt: json['updated_at']?.toString(),
+      tools: (json['tools'] as List?)?.map((e) => e.toString()).toList(),
+      deviceFeature: json['device_feature']?.toString(),
     );
   }
 
@@ -58,6 +64,8 @@ class Career {
       'audio_path': audioPath,
       'created_at': createdAt,
       'updated_at': updatedAt,
+      'tools': tools,
+      'device_feature': deviceFeature,
     };
   }
 }

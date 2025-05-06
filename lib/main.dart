@@ -15,7 +15,7 @@ import 'package:ctech/screens/profile_screen.dart';
 import 'package:ctech/screens/settings_screen.dart';
 import 'package:ctech/screens/forgot_password_screen.dart';
 import 'package:ctech/screens/career_details_screen.dart';
-import 'package:ctech/screens/careers_screen.dart';
+import 'package:ctech/screens/career_screen.dart';
 import 'package:ctech/screens/verify_otp_screen.dart';
 import 'package:ctech/screens/reset_password_screen.dart';
 
@@ -67,7 +67,7 @@ class MyApp extends StatelessWidget {
           '/login': (context) => const LoginScreen(),
           '/signup': (context) => const SignUpScreen(),
           '/home': (context) => const HomeScreen(),
-          '/careers': (context) => const CareersScreen(),
+          '/careers': (context) => const CareerScreen(),
           '/quiz': (context) => const QuizScreen(),
           '/stories': (context) => const StoriesScreen(),
           '/tech-words': (context) => const TechWordsScreen(),
@@ -98,7 +98,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
         '/home': (context) => const HomeScreen(),
-        '/careers': (context) => const CareersScreen(),
+        '/careers': (context) => const CareerScreen(),
         '/quiz': (context) => const QuizScreen(),
         '/stories': (context) => const StoriesScreen(),
         '/tech-words': (context) => const TechWordsScreen(),

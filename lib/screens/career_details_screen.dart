@@ -20,7 +20,7 @@ class CareerDetailsScreen extends StatelessWidget {
             flexibleSpace: FlexibleSpaceBar(
               title: Text(career.title),
               background: Image.network(
-                career.imageUrl,
+                career.imagePath!,
                 fit: BoxFit.cover,
               ),
             ),
@@ -53,13 +53,13 @@ class CareerDetailsScreen extends StatelessWidget {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: career.skills.map((skill) {
+                    children: career.skills?.split(',').map((skill) {
                       return Chip(
                         label: Text(skill),
                         backgroundColor:
                             Theme.of(context).colorScheme.primary.withOpacity(0.1),
                       );
-                    }).toList(),
+                    }).toList() ?? [],
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -72,13 +72,12 @@ class CareerDetailsScreen extends StatelessWidget {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: career.tools.map((tool) {
-                      return Chip(
-                        label: Text(tool),
-                        backgroundColor:
-                            Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                      );
-                    }).toList(),
+                    children: career.tools?.map((tool) {
+                    return Chip(
+                      label: Text(tool),
+                      backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                    );
+                  }).toList() ?? [],
                   ),
                   const SizedBox(height: 32),
                   Text(
@@ -100,7 +99,7 @@ class CareerDetailsScreen extends StatelessWidget {
                           Row(
                             children: [
                               Icon(
-                                _getDeviceFeatureIcon(career.deviceFeature),
+                                _getDeviceFeatureIcon(career.deviceFeature ?? ''),
                                 size: 24,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
