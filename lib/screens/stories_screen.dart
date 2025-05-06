@@ -1,65 +1,40 @@
 import 'package:flutter/material.dart';
-import '../../models/story.dart';
-// import '../../services/api_service.dart';
+import '../services/stories_service.dart';
+import '../models/story.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 
 class StoriesScreen extends StatefulWidget {
-  const StoriesScreen({super.key});
+  const StoriesScreen({Key? key}) : super(key: key);
 
   @override
-  State<StoriesScreen> createState() => _StoriesScreenState();
+  _StoriesScreenState createState() => _StoriesScreenState();
 }
 
 class _StoriesScreenState extends State<StoriesScreen> {
   // final ApiService _apiService = ApiService();
-  final _nameController = TextEditingController();
-  final _roleController = TextEditingController();
+  final _titleController = TextEditingController();
   final _contentController = TextEditingController();
+  final _authorController = TextEditingController();
+  final _categoryController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  List<Story> _stories = [];
+  late Future<List<Story>> _futureStories;
   bool _isLoading = true;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    _loadStories();
+    _futureStories = StoriesService().fetchStories();
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _roleController.dispose();
+    _titleController.dispose();
     _contentController.dispose();
+    _authorController.dispose();
+    _categoryController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadStories() async {
-    // Temporarily using mock data while API is unavailable
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    setState(() {
-      _stories = [
-        Story(
-          id: '1',
-          userId: 'mock-user-1',
-          name: 'John Doe',
-          role: 'Software Engineer',
-          content: 'Started my journey as a self-taught developer...',
-          createdAt: DateTime.now(),
-        ),
-        Story(
-          id: '2',
-          userId: 'mock-user-2',
-          name: 'Jane Smith',
-          role: 'Data Scientist',
-          content: 'Transitioned from biology to data science...',
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        ),
-      ];
-      _isLoading = false;
-    });
   }
 
   void _showAddStoryDialog() {
@@ -73,24 +48,24 @@ class _StoriesScreenState extends State<StoriesScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               CustomTextField(
-                controller: _nameController,
-                labelText: 'Name',
+                controller: _titleController,
+                labelText: 'Title',
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a name';
+                    return 'Please enter a title';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               CustomTextField(
-                controller: _roleController,
-                labelText: 'Role',
+                controller: _authorController,
+                labelText: 'Author Name',
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a role';
+                    return 'Please enter your name';
                   }
                   return null;
                 },
@@ -103,6 +78,17 @@ class _StoriesScreenState extends State<StoriesScreen> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please share the story';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              CustomTextField(
+                controller: _categoryController,
+                labelText: 'Category',
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a category';
                   }
                   return null;
                 },
@@ -134,24 +120,25 @@ class _StoriesScreenState extends State<StoriesScreen> {
     await Future.delayed(const Duration(milliseconds: 500));
 
     final story = Story(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: 'mock-user-${DateTime.now().millisecondsSinceEpoch}',
-      name: _nameController.text,
-      role: _roleController.text,
+      id: DateTime.now().millisecondsSinceEpoch,
+      title: _titleController.text,
       content: _contentController.text,
-      createdAt: DateTime.now(),
+      author: _authorController.text,
+      date: DateTime.now().toString().split(' ')[0], // Format: YYYY-MM-DD
+      category: _categoryController.text,
     );
 
     setState(() {
-      _stories.add(story);
+      _futureStories = Future.value([story]);
       _isSubmitting = false;
     });
 
     if (!mounted) return;
     Navigator.pop(context);
-    _nameController.clear();
-    _roleController.clear();
+    _titleController.clear();
     _contentController.clear();
+    _authorController.clear();
+    _categoryController.clear();
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -165,77 +152,62 @@ class _StoriesScreenState extends State<StoriesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Success Stories'),
+        backgroundColor: Theme.of(context).primaryColor,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _stories.length,
-              itemBuilder: (context, index) {
-                final story = _stories[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+      body: FutureBuilder<List<Story>>(
+        future: _futureStories,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No stories available.'));
+          }
+
+          final stories = snapshot.data!;
+          return ListView.builder(
+            itemCount: stories.length,
+            itemBuilder: (context, index) {
+              final story = stories[index];
+              return Card(
+                margin: const EdgeInsets.all(8.0),
+                child: ExpansionTile(
+                  leading: CircleAvatar(
+                    child: Text(story.author[0].toUpperCase()),
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              child: Text(
-                                story.name[0].toUpperCase(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    story.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  Text(
-                                    story.role,
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(story.content),
-                        if (story.imageUrl != null) ...[
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              story.imageUrl!,
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+                  title: Text(
+                    story.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text('By ${story.author} • ${story.date}'),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            story.content,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 8),
+                          Chip(
+                            label: Text(story.category),
+                            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
                           ),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddStoryDialog,
         icon: const Icon(Icons.add),

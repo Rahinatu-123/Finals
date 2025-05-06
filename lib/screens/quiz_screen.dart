@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import '../services/quiz_service.dart';
+import '../models/quiz.dart';
 import '../../widgets/custom_button.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -10,65 +11,25 @@ class QuizScreen extends StatefulWidget {
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-  final ApiService _apiService = ApiService();
-  final List<Map<String, dynamic>> _questions = [
-    {
-      'question': 'What interests you the most?',
-      'options': [
-        'Building and creating things',
-        'Solving complex problems',
-        'Design and visual arts',
-        'Working with data and numbers',
-      ],
-    },
-    {
-      'question': 'How do you prefer to work?',
-      'options': [
-        'Independently',
-        'In a team',
-        'Both, depending on the task',
-        'Leading a team',
-      ],
-    },
-    {
-      'question': 'What type of problems do you enjoy solving?',
-      'options': [
-        'Technical and logical problems',
-        'Creative and design challenges',
-        'Business and strategic issues',
-        'People and communication challenges',
-      ],
-    },
-    {
-      'question': 'Which technology interests you the most?',
-      'options': [
-        'Artificial Intelligence and Machine Learning',
-        'Web and Mobile Development',
-        'Cybersecurity',
-        'Cloud Computing',
-      ],
-    },
-    {
-      'question': 'What\'s your preferred work environment?',
-      'options': [
-        'Fast-paced startup',
-        'Large tech company',
-        'Freelance/Independent',
-        'Research and Development',
-      ],
-    },
-  ];
-
+  final QuizService _quizService = QuizService();
+  late Future<List<Quiz>> _futureQuestions;
+  List<Quiz> _questions = [];
   int _currentQuestionIndex = 0;
-  List<Map<String, dynamic>> _answers = [];
+  List<QuizAnswer> _answers = [];
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureQuestions = _quizService.fetchQuestions();
+  }
 
   void _selectAnswer(String answer) {
     setState(() {
-      _answers.add({
-        'question': _questions[_currentQuestionIndex]['question'],
-        'answer': answer,
-      });
+      _answers.add(QuizAnswer(
+        question: _questions[_currentQuestionIndex].question,
+        answer: answer,
+      ));
 
       if (_currentQuestionIndex < _questions.length - 1) {
         _currentQuestionIndex++;
@@ -82,7 +43,7 @@ class _QuizScreenState extends State<QuizScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final result = await _apiService.submitQuiz(_answers);
+      final result = await _quizService.submitQuiz(_answers);
       if (!mounted) return;
 
       Navigator.pushReplacement(
@@ -105,74 +66,93 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentQuestion = _questions[_currentQuestionIndex];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Career Quiz'),
       ),
-      body: _isSubmitting
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Analyzing your responses...'),
-                ],
-              ),
-            )
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    LinearProgressIndicator(
-                      value: (_currentQuestionIndex + 1) / _questions.length,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Question ${_currentQuestionIndex + 1}/${_questions.length}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
+      body: FutureBuilder<List<Quiz>>(
+        future: _futureQuestions,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No questions available.'));
+          }
+
+          _questions = snapshot.data!;
+          final currentQuestion = _questions[_currentQuestionIndex];
+
+          return _isSubmitting
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Analyzing your responses...'),
+                    ],
+                  ),
+                )
+              : SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LinearProgressIndicator(
+                          value: (_currentQuestionIndex + 1) / _questions.length,
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.1),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Question ${_currentQuestionIndex + 1}/${_questions.length}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          currentQuestion.question,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 32),
+                        Expanded(
+                          child: ListView.separated(
+                            itemCount: currentQuestion.options.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 16),
+                            itemBuilder: (context, index) {
+                              final option = currentQuestion.options[index];
+                              return CustomButton(
+                                text: option,
+                                isOutlined: true,
+                                onPressed: () => _selectAnswer(option),
+                              );
+                            },
                           ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    Text(
-                      currentQuestion['question'],
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 32),
-                    Expanded(
-                      child: ListView.separated(
-                        itemCount: currentQuestion['options'].length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 16),
-                        itemBuilder: (context, index) {
-                          final option = currentQuestion['options'][index];
-                          return CustomButton(
-                            text: option,
-                            isOutlined: true,
-                            onPressed: () => _selectAnswer(option),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
+                );
+        },
+      ),
     );
   }
 }
 
 class QuizResultScreen extends StatelessWidget {
-  final Map<String, dynamic> result;
+  final QuizResult result;
 
   const QuizResultScreen({
     super.key,
@@ -203,7 +183,8 @@ class QuizResultScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Based on your responses, here are the tech careers that might interest you:',
+                result.message ??
+                    'Based on your responses, here are the tech careers that might interest you:',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -212,9 +193,9 @@ class QuizResultScreen extends StatelessWidget {
               const SizedBox(height: 32),
               Expanded(
                 child: ListView.builder(
-                  itemCount: (result['careers'] as List).length,
+                  itemCount: result.careers.length,
                   itemBuilder: (context, index) {
-                    final career = result['careers'][index];
+                    final career = result.careers[index];
                     return Card(
                       margin: const EdgeInsets.only(bottom: 16),
                       shape: RoundedRectangleBorder(
@@ -223,8 +204,10 @@ class QuizResultScreen extends StatelessWidget {
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(16),
                         leading: CircleAvatar(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.1),
                           child: Text(
                             '${index + 1}',
                             style: TextStyle(
@@ -249,9 +232,12 @@ class QuizResultScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               CustomButton(
-                text: 'Explore More Careers',
+                text: 'Take Quiz Again',
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/careers');
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const QuizScreen()),
+                  );
                 },
               ),
             ],

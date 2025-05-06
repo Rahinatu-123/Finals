@@ -1,34 +1,46 @@
 class Career {
-  final String id;
+  final int id;
   final String title;
   final String description;
-  final String imageUrl;
-  final List<String> skills;
-  final List<String> tools;
-  final String simulationType;
-  final String deviceFeature;
+  final String skills;
+  final String education;
+  final String salaryRange;
+  final String jobOutlook;
+  final String? imagePath;
+  final String? videoPath;
+  final String? audioPath;
+  final String? createdAt;
+  final String? updatedAt;
 
   Career({
     required this.id,
     required this.title,
     required this.description,
-    required this.imageUrl,
     required this.skills,
-    required this.tools,
-    required this.simulationType,
-    required this.deviceFeature,
+    required this.education,
+    required this.salaryRange,
+    required this.jobOutlook,
+    this.imagePath,
+    this.videoPath,
+    this.audioPath,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory Career.fromJson(Map<String, dynamic> json) {
     return Career(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String,
-      imageUrl: json['image_url'] as String,
-      skills: List<String>.from(json['skills'] as List),
-      tools: List<String>.from(json['tools'] as List),
-      simulationType: json['simulation_type'] as String,
-      deviceFeature: json['device_feature'] as String,
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      title: json['title']?.toString() ?? 'Unknown title',
+      description: json['description']?.toString() ?? 'No description available',
+      skills: json['skills']?.toString() ?? '',
+      education: json['education']?.toString() ?? '',
+      salaryRange: json['salary_range']?.toString() ?? '',
+      jobOutlook: json['job_outlook']?.toString() ?? '',
+      imagePath: json['image_path']?.toString(),
+      videoPath: json['video_path']?.toString(),
+      audioPath: json['audio_path']?.toString(),
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
     );
   }
 
@@ -37,11 +49,15 @@ class Career {
       'id': id,
       'title': title,
       'description': description,
-      'image_url': imageUrl,
       'skills': skills,
-      'tools': tools,
-      'simulation_type': simulationType,
-      'device_feature': deviceFeature,
+      'education': education,
+      'salary_range': salaryRange,
+      'job_outlook': jobOutlook,
+      'image_path': imagePath,
+      'video_path': videoPath,
+      'audio_path': audioPath,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
     };
   }
 }

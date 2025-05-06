@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/career.dart';
-import '../services/api_service.dart';
+import '../services/career_service.dart';
 import '../services/auth.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -13,7 +13,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final ApiService _apiService = ApiService();
+  final CareerService _careerService = CareerService();
   static const darkBlue = Color(0xFF0A2A36);
   List<Career> _filteredProfiles = [];
   bool _isLoading = true;
@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadCareers() async {
     try {
-      final careers = await _apiService.getCareers();
+      final careers = await _careerService.fetchCareers();
       if (mounted) {
         setState(() {
           _filteredProfiles = careers;
@@ -59,15 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedIndex = index;
     });
-  }
-
-  Widget _buildTechWordChip(String label) {
-    return ActionChip(
-      label: Text(label),
-      backgroundColor: darkBlue.withOpacity(0.1),
-      labelStyle: TextStyle(color: darkBlue),
-      onPressed: () => Navigator.pushNamed(context, '/tech-words'),
-    );
   }
 
   @override
@@ -193,7 +184,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-
             ],
           ),
           // Careers Tab
@@ -330,88 +320,120 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           // Stories Tab
-          ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: 5,  // Replace with actual stories count
-            itemBuilder: (context, index) {
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  leading: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey[200],
+          FutureBuilder(
+            future: _careerService.fetchCareers(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text('No stories available.'));
+              }
+
+              final careers = snapshot.data!;
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: careers.length,
+                itemBuilder: (context, index) {
+                  final career = careers[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.article),
-                  ),
-                  title: Text(
-                    'Success Story ${index + 1}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    'A brief preview of success story ${index + 1}...',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => Navigator.pushNamed(context, '/stories'),
-                ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          image: DecorationImage(
+                            image: NetworkImage(career.imageUrl.isEmpty
+                                ? 'https://via.placeholder.com/150'
+                                : career.imageUrl),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        career.title,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        career.description,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () => Navigator.pushNamed(context, '/stories'),
+                    ),
+                  );
+                },
               );
             },
           ),
           // Words Tab
-          GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 1.5,
-            ),
-            itemCount: 10,  // Replace with actual tech words count
-            itemBuilder: (context, index) {
-              final words = [
-                'API', 'Cloud', 'DevOps', 'Machine Learning', 'Blockchain',
-                'AI', 'IoT', 'Big Data', 'Cybersecurity', 'Mobile Development'
-              ];
-              return Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          FutureBuilder(
+            future: _careerService.fetchCareers(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text('No tech words available.'));
+              }
+
+              final careers = snapshot.data!;
+              return GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 1.5,
                 ),
-                child: InkWell(
-                  onTap: () => Navigator.pushNamed(context, '/tech-words'),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          words[index],
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tap to learn more',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                itemCount: careers.length,
+                itemBuilder: (context, index) {
+                  final career = careers[index];
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                ),
+                    child: InkWell(
+                      onTap: () => Navigator.pushNamed(context, '/tech-words'),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              career.title,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              career.description,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),

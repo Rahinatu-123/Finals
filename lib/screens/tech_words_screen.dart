@@ -1,63 +1,41 @@
 import 'package:flutter/material.dart';
-import '../../models/tech_word.dart';
+import '../services/tech_words_service.dart';
+import '../models/tech_word.dart';
 // import '../../services/api_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 
 class TechWordsScreen extends StatefulWidget {
-  const TechWordsScreen({super.key});
+  const TechWordsScreen({Key? key}) : super(key: key);
 
   @override
-  State<TechWordsScreen> createState() => _TechWordsScreenState();
+  _TechWordsScreenState createState() => _TechWordsScreenState();
 }
 
 class _TechWordsScreenState extends State<TechWordsScreen> {
   // final ApiService _apiService = ApiService();
-  final _termController = TextEditingController();
-  final _definitionController = TextEditingController();
+  final _wordController = TextEditingController();
+  final _meaningController = TextEditingController();
+  final _exampleController = TextEditingController();
+  final _categoryController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  List<TechWord> _techWords = [];
+  late Future<List<TechWord>> _futureTechWords;
   bool _isLoading = true;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    _loadTechWords();
+    _futureTechWords = TechWordsService().fetchTechWords();
   }
 
   @override
   void dispose() {
-    _termController.dispose();
-    _definitionController.dispose();
+    _wordController.dispose();
+    _meaningController.dispose();
+    _exampleController.dispose();
+    _categoryController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadTechWords() async {
-    // Temporarily using mock data while API is unavailable
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    setState(() {
-      _techWords = [
-        TechWord(
-          id: '1',
-          userId: 'mock-user-1',
-          term: 'API',
-          definition: 'Application Programming Interface - a set of rules that allow programs to talk to each other.',
-          createdAt: DateTime.now(),
-          isApproved: true,
-        ),
-        TechWord(
-          id: '2',
-          userId: 'mock-user-2',
-          term: 'CORS',
-          definition: 'Cross-Origin Resource Sharing - a security feature that lets web apps make requests to other domains.',
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-          isApproved: true,
-        ),
-      ];
-      _isLoading = false;
-    });
   }
 
   void _showAddWordDialog() {
@@ -71,24 +49,47 @@ class _TechWordsScreenState extends State<TechWordsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               CustomTextField(
-                controller: _termController,
-                labelText: 'Term',
+                controller: _wordController,
+                labelText: 'Word',
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a term';
+                    return 'Please enter a word';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               CustomTextField(
-                controller: _definitionController,
-                labelText: 'Definition',
-                maxLines: 3,
+                controller: _meaningController,
+                labelText: 'Meaning',
+                maxLines: 2,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a definition';
+                    return 'Please enter the meaning';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              CustomTextField(
+                controller: _exampleController,
+                labelText: 'Example',
+                maxLines: 2,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter an example';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              CustomTextField(
+                controller: _categoryController,
+                labelText: 'Category',
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a category';
                   }
                   return null;
                 },
@@ -120,23 +121,24 @@ class _TechWordsScreenState extends State<TechWordsScreen> {
     await Future.delayed(const Duration(milliseconds: 500));
 
     final word = TechWord(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: 'mock-user-${DateTime.now().millisecondsSinceEpoch}',
-      term: _termController.text,
-      definition: _definitionController.text,
-      createdAt: DateTime.now(),
-      isApproved: false,
+      id: DateTime.now().millisecondsSinceEpoch,
+      word: _wordController.text,
+      meaning: _meaningController.text,
+      example: _exampleController.text,
+      category: _categoryController.text,
     );
 
     setState(() {
-      _techWords.add(word);
+      _futureTechWords = Future.value([word]);
       _isSubmitting = false;
     });
 
     if (!mounted) return;
     Navigator.pop(context);
-    _termController.clear();
-    _definitionController.clear();
+    _wordController.clear();
+    _meaningController.clear();
+    _exampleController.clear();
+    _categoryController.clear();
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -150,34 +152,70 @@ class _TechWordsScreenState extends State<TechWordsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tech Words'),
+        backgroundColor: Theme.of(context).primaryColor,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _techWords.length,
-              itemBuilder: (context, index) {
-                final word = _techWords[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+      body: FutureBuilder<List<TechWord>>(
+        future: _futureTechWords,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No tech words available.'));
+          }
+
+          final techWords = snapshot.data!;
+          return ListView.builder(
+            itemCount: techWords.length,
+            itemBuilder: (context, index) {
+              final word = techWords[index];
+              return Card(
+                margin: const EdgeInsets.all(8.0),
+                child: ExpansionTile(
+                  leading: CircleAvatar(
+                    child: Text(word.word[0].toUpperCase()),
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
                   ),
-                  child: ExpansionTile(
-                    title: Text(
-                      word.term,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(word.definition),
+                  title: Text(
+                    word.word,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(word.category),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Meaning:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                          Text(word.meaning),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Example:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                          Text(word.example),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddWordDialog,
         child: const Icon(Icons.add),
