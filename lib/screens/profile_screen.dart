@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import '../../widgets/custom_button.dart';
-import '../../services/auth.dart';
+import '../widgets/custom_button.dart';
+import '../services/auth.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -22,12 +21,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final user = FirebaseAuth.instance.currentUser;
+    final user = context.read<AuthService>().currentUser;
     if (user != null) {
       final names = user.displayName?.split(' ') ?? ['', ''];
       _firstNameController = TextEditingController(text: names[0]);
       _lastNameController = TextEditingController(text: names.length > 1 ? names[1] : '');
-      _emailController = TextEditingController(text: user.email ?? '');
+      _emailController = TextEditingController(text: user.email);
       _imageUrl = user.photoURL;
     } else {
       _firstNameController = TextEditingController();
@@ -44,30 +43,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  void _toggleEdit() {
-    setState(() {
-      if (_isEditing) {
-        if (_formKey.currentState?.validate() ?? false) {
+  Future<void> _toggleEdit() async {
+    if (_isEditing) {
+      if (_formKey.currentState?.validate() ?? false) {
+        try {
           final authService = context.read<AuthService>();
-          authService.updateProfile(
-            displayName: '${_firstNameController.text} ${_lastNameController.text}',
+          final firstName = _firstNameController.text.trim();
+          final lastName = _lastNameController.text.trim();
+          final displayName = [firstName, lastName].where((s) => s.isNotEmpty).join(' ');
+          
+          await authService.updateProfile(
+            displayName: displayName,
             photoURL: _imageUrl,
-          ).then((_) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profile updated successfully')),
-            );
-            _isEditing = false;
-            setState(() {});
-          }).catchError((error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(error.toString())),
-            );
-          });
+          );
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile updated successfully')),
+          );
+          setState(() => _isEditing = false);
+        } catch (error) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error.toString())),
+          );
         }
-      } else {
-        _isEditing = true;
       }
-    });
+    } else {
+      setState(() => _isEditing = true);
+    }
   }
 
   Future<void> _pickImage() async {
@@ -108,7 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.save : Icons.edit),
-            onPressed: _toggleEdit,
+            onPressed: () => _toggleEdit(),
           ),
           IconButton(
             icon: const Icon(Icons.settings),
@@ -195,20 +198,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _emailController,
-                      enabled: _isEditing,
+                      enabled: false, // Email can't be changed directly
                       decoration: const InputDecoration(
                         labelText: 'Email',
                         border: OutlineInputBorder(),
+                        helperText: 'Email cannot be changed directly',
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
                     ),
                   ],
                 ),
@@ -251,9 +246,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               CustomButton(
                 text: 'Log Out',
                 isOutlined: true,
-                onPressed: () {
-                  // TODO: Implement logout
-                  Navigator.pushReplacementNamed(context, '/login');
+                onPressed: () async {
+                  try {
+                    final authService = context.read<AuthService>();
+                    await authService.signOut();
+                    if (!mounted) return;
+                    Navigator.pushReplacementNamed(context, '/login');
+                  } catch (e) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.toString())),
+                    );
+                  }
                 },
               ),
             ],

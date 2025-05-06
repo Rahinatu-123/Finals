@@ -1,39 +1,37 @@
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+
 class User {
-  final String id;
-  final String firstName;
-  final String lastName;
+  final String uid;
+  final String? displayName;
   final String email;
-  final String role;
-  final DateTime createdAt;
+  final String? photoURL;
+  final DateTime? createdAt;
 
   User({
-    required this.id,
-    required this.firstName,
-    required this.lastName,
+    required this.uid,
+    this.displayName,
     required this.email,
-    required this.role,
-    required this.createdAt,
+    this.photoURL,
+    this.createdAt,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) {
+  factory User.fromFirebaseUser(firebase_auth.User firebaseUser) {
     return User(
-      id: json['id'] as String,
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
-      email: json['email'] as String,
-      role: json['role'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      uid: firebaseUser.uid,
+      displayName: firebaseUser.displayName,
+      email: firebaseUser.email!,
+      photoURL: firebaseUser.photoURL,
+      createdAt: firebaseUser.metadata.creationTime,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'first_name': firstName,
-      'last_name': lastName,
+      'uid': uid,
+      'displayName': displayName,
       'email': email,
-      'role': role,
-      'created_at': createdAt.toIso8601String(),
+      'photoURL': photoURL,
+      'createdAt': createdAt?.toIso8601String(),
     };
   }
 }

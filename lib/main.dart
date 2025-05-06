@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ctech/providers/theme_provider.dart';
 import 'package:ctech/services/auth.dart';
+import 'package:ctech/screens/splash_screen.dart';
 import 'package:ctech/screens/login_screen.dart';
 import 'package:ctech/screens/signup_screen.dart';
 import 'package:ctech/screens/home_screen.dart';
@@ -33,7 +34,7 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => ThemeProvider(),
         ),
-        Provider<AuthService>(
+        ChangeNotifierProvider<AuthService>(
           create: (_) => AuthService(FirebaseAuth.instance),
         ),
         StreamProvider<User?>(
@@ -54,11 +55,45 @@ class MyApp extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final authState = context.watch<User?>();
 
+    // If user is already authenticated, show home screen
+    if (authState != null) {
+      debugPrint('User is authenticated, showing HomeScreen');
+      return MaterialApp(
+        title: 'CTech',
+        debugShowCheckedModeBanner: false,
+        theme: themeProvider.theme,
+        home: const HomeScreen(),
+        routes: {
+          '/login': (context) => const LoginScreen(),
+          '/signup': (context) => const SignUpScreen(),
+          '/home': (context) => const HomeScreen(),
+          '/careers': (context) => const CareersScreen(),
+          '/quiz': (context) => const QuizScreen(),
+          '/stories': (context) => const StoriesScreen(),
+          '/tech-words': (context) => const TechWordsScreen(),
+          '/profile': (context) => const ProfileScreen(),
+          '/settings': (context) => const SettingsScreen(),
+          '/forgot-password': (context) => const ForgotPasswordScreen(),
+          '/career-details': (context) => CareerDetailsScreen(
+                career: ModalRoute.of(context)!.settings.arguments as Career,
+              ),
+          '/verify-otp': (context) => VerifyOtpScreen(
+                email: ModalRoute.of(context)!.settings.arguments as String,
+              ),
+          '/reset-password': (context) => ResetPasswordScreen(
+                email: (ModalRoute.of(context)!.settings.arguments as Map<String, String>)['email']!,
+                otp: (ModalRoute.of(context)!.settings.arguments as Map<String, String>)['otp']!,
+              ),
+        },
+      );
+    }
+
+    // Show splash screen for initial load
     return MaterialApp(
       title: 'CTech',
       debugShowCheckedModeBanner: false,
       theme: themeProvider.theme,
-      home: authState != null ? const HomeScreen() : const LoginScreen(),
+      home: const SplashScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),

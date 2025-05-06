@@ -1,19 +1,27 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
+import '../models/user.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService extends ChangeNotifier {
-  final FirebaseAuth _auth;
+  final firebase_auth.FirebaseAuth _auth;
   User? _user;
 
   AuthService(this._auth) {
-    _auth.authStateChanges().listen((User? user) {
-      _user = user;
+    _auth.authStateChanges().listen((firebase_auth.User? firebaseUser) async {
+      debugPrint('Auth state changed: ${firebaseUser?.uid}');
+      _user = firebaseUser != null ? User.fromFirebaseUser(firebaseUser) : null;
+      
+      // Update SharedPreferences login status
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', firebaseUser != null);
+      
       notifyListeners();
     });
   }
 
   // Get auth state changes
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<firebase_auth.User?> get authStateChanges => _auth.authStateChanges();
 
   // Get current user
   User? get currentUser => _user;
@@ -22,7 +30,7 @@ class AuthService extends ChangeNotifier {
   bool get isLoggedIn => _user != null;
 
   // Sign up with email and password
-  Future<UserCredential?> signUp({
+  Future<firebase_auth.UserCredential?> signUp({
     required String email,
     required String password,
   }) async {
@@ -34,7 +42,7 @@ class AuthService extends ChangeNotifier {
       );
       debugPrint('Sign up successful for user: ${credential.user?.uid}');
       return credential;
-    } on FirebaseAuthException catch (e) {
+    } on firebase_auth.FirebaseAuthException catch (e) {
       debugPrint('Sign up error: ${e.code} - ${e.message}');
       if (e.code == 'weak-password') {
         throw 'The password provided is too weak.';
@@ -46,7 +54,7 @@ class AuthService extends ChangeNotifier {
   }
 
   // Sign in with email and password
-  Future<UserCredential?> signIn({
+  Future<firebase_auth.UserCredential?> signIn({
     required String email,
     required String password,
   }) async {
@@ -57,8 +65,10 @@ class AuthService extends ChangeNotifier {
         password: password,
       );
       debugPrint('Sign in successful for user: ${credential.user?.uid}');
+      _user = credential.user != null ? User.fromFirebaseUser(credential.user!) : null;
+      notifyListeners();
       return credential;
-    } on FirebaseAuthException catch (e) {
+    } on firebase_auth.FirebaseAuthException catch (e) {
       debugPrint('Sign in error: ${e.code} - ${e.message}');
       if (e.code == 'user-not-found') {
         throw 'No user found for that email.';
@@ -72,6 +82,8 @@ class AuthService extends ChangeNotifier {
   // Sign out
   Future<void> signOut() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', false);
       await _auth.signOut();
     } catch (e) {
       throw 'An error occurred during sign out';
@@ -82,7 +94,7 @@ class AuthService extends ChangeNotifier {
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
-    } on FirebaseAuthException catch (e) {
+    } on firebase_auth.FirebaseAuthException catch (e) {
       throw e.message ?? 'An error occurred while resetting password';
     }
   }
@@ -90,18 +102,36 @@ class AuthService extends ChangeNotifier {
   // Update user profile
   Future<void> updateProfile({String? displayName, String? photoURL}) async {
     try {
-      await _user?.updateDisplayName(displayName);
-      await _user?.updatePhotoURL(photoURL);
+      final user = _auth.currentUser;
+      if (user != null) {
+        if (displayName != null) await user.updateDisplayName(displayName);
+        if (photoURL != null) await user.updatePhotoURL(photoURL);
+        
+        // Reload user to get updated data
+        await user.reload();
+        final updatedUser = _auth.currentUser;
+        if (updatedUser != null) {
+          _user = User.fromFirebaseUser(updatedUser);
+          notifyListeners();
+        }
+      }
     } catch (e) {
-      throw 'An error occurred while updating profile';
+      debugPrint('Update profile error: $e');
+      throw 'Failed to update profile';
     }
   }
 
   // Delete account
   Future<void> deleteAccount() async {
     try {
-      await _user?.delete();
-    } on FirebaseAuthException catch (e) {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.delete();
+        _user = null;
+        notifyListeners();
+      }
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      debugPrint('Delete account error: ${e.code} - ${e.message}');
       throw e.message ?? 'An error occurred while deleting account';
     }
   }

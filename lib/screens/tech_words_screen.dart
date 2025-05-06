@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/tech_word.dart';
-import '../../services/api_service.dart';
+// import '../../services/api_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 
@@ -12,7 +12,7 @@ class TechWordsScreen extends StatefulWidget {
 }
 
 class _TechWordsScreenState extends State<TechWordsScreen> {
-  final ApiService _apiService = ApiService();
+  // final ApiService _apiService = ApiService();
   final _termController = TextEditingController();
   final _definitionController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -34,16 +34,30 @@ class _TechWordsScreenState extends State<TechWordsScreen> {
   }
 
   Future<void> _loadTechWords() async {
-    try {
-      final words = await _apiService.getTechWords();
-      setState(() {
-        _techWords = words;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      // TODO: Handle error
-    }
+    // Temporarily using mock data while API is unavailable
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    setState(() {
+      _techWords = [
+        TechWord(
+          id: '1',
+          userId: 'mock-user-1',
+          term: 'API',
+          definition: 'Application Programming Interface - a set of rules that allow programs to talk to each other.',
+          createdAt: DateTime.now(),
+          isApproved: true,
+        ),
+        TechWord(
+          id: '2',
+          userId: 'mock-user-2',
+          term: 'CORS',
+          definition: 'Cross-Origin Resource Sharing - a security feature that lets web apps make requests to other domains.',
+          createdAt: DateTime.now().subtract(const Duration(days: 1)),
+          isApproved: true,
+        ),
+      ];
+      _isLoading = false;
+    });
   }
 
   void _showAddWordDialog() {
@@ -102,37 +116,33 @@ class _TechWordsScreenState extends State<TechWordsScreen> {
 
     setState(() => _isSubmitting = true);
 
-    try {
-      final word = await _apiService.createTechWord(
-        _termController.text,
-        _definitionController.text,
-      );
+    // Simulate API delay
+    await Future.delayed(const Duration(milliseconds: 500));
 
-      setState(() {
-        _techWords.add(word);
-        _isSubmitting = false;
-      });
+    final word = TechWord(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: 'mock-user-${DateTime.now().millisecondsSinceEpoch}',
+      term: _termController.text,
+      definition: _definitionController.text,
+      createdAt: DateTime.now(),
+      isApproved: false,
+    );
 
-      if (!mounted) return;
-      Navigator.pop(context);
-      _termController.clear();
-      _definitionController.clear();
+    setState(() {
+      _techWords.add(word);
+      _isSubmitting = false;
+    });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tech word added successfully!'),
-        ),
-      );
-    } catch (e) {
-      setState(() => _isSubmitting = false);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    if (!mounted) return;
+    Navigator.pop(context);
+    _termController.clear();
+    _definitionController.clear();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Tech word added successfully!'),
+      ),
+    );
   }
 
   @override

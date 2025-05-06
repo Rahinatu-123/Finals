@@ -28,19 +28,19 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
+        _errorMessage = null;
       });
 
       try {
         final authService = Provider.of<AuthService>(context, listen: false);
-        final userCredential = await authService.signIn(
+        await authService.signIn(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
 
         if (!mounted) return;
 
-        debugPrint('Login successful, user: ${userCredential?.user?.uid}');
-        // No need to navigate - the auth state change will trigger navigation
+        Navigator.pushReplacementNamed(context, '/home');
       } catch (e) {
         if (!mounted) return;
 

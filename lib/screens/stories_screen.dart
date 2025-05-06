@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/story.dart';
-import '../../services/api_service.dart';
+// import '../../services/api_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 
@@ -12,7 +12,7 @@ class StoriesScreen extends StatefulWidget {
 }
 
 class _StoriesScreenState extends State<StoriesScreen> {
-  final ApiService _apiService = ApiService();
+  // final ApiService _apiService = ApiService();
   final _nameController = TextEditingController();
   final _roleController = TextEditingController();
   final _contentController = TextEditingController();
@@ -36,16 +36,30 @@ class _StoriesScreenState extends State<StoriesScreen> {
   }
 
   Future<void> _loadStories() async {
-    try {
-      final stories = await _apiService.getStories();
-      setState(() {
-        _stories = stories;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      // TODO: Handle error
-    }
+    // Temporarily using mock data while API is unavailable
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    setState(() {
+      _stories = [
+        Story(
+          id: '1',
+          userId: 'mock-user-1',
+          name: 'John Doe',
+          role: 'Software Engineer',
+          content: 'Started my journey as a self-taught developer...',
+          createdAt: DateTime.now(),
+        ),
+        Story(
+          id: '2',
+          userId: 'mock-user-2',
+          name: 'Jane Smith',
+          role: 'Data Scientist',
+          content: 'Transitioned from biology to data science...',
+          createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        ),
+      ];
+      _isLoading = false;
+    });
   }
 
   void _showAddStoryDialog() {
@@ -116,39 +130,34 @@ class _StoriesScreenState extends State<StoriesScreen> {
 
     setState(() => _isSubmitting = true);
 
-    try {
-      final story = await _apiService.createStory(
-        _nameController.text,
-        _roleController.text,
-        _contentController.text,
-      );
+    // Simulate API delay
+    await Future.delayed(const Duration(milliseconds: 500));
 
-      setState(() {
-        _stories.add(story);
-        _isSubmitting = false;
-      });
+    final story = Story(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: 'mock-user-${DateTime.now().millisecondsSinceEpoch}',
+      name: _nameController.text,
+      role: _roleController.text,
+      content: _contentController.text,
+      createdAt: DateTime.now(),
+    );
 
-      if (!mounted) return;
-      Navigator.pop(context);
-      _nameController.clear();
-      _roleController.clear();
-      _contentController.clear();
+    setState(() {
+      _stories.add(story);
+      _isSubmitting = false;
+    });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Story shared successfully!'),
-        ),
-      );
-    } catch (e) {
-      setState(() => _isSubmitting = false);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    if (!mounted) return;
+    Navigator.pop(context);
+    _nameController.clear();
+    _roleController.clear();
+    _contentController.clear();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Story shared successfully!'),
+      ),
+    );
   }
 
   @override
