@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "539105617590",
+    "project_id": "ctechfinals",
+    "storage_bucket": "ctechfinals.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:539105617590:android:7ebde83e2ef23deaea6817",
+        "android_client_info": {
+          "package_name": "com.example.ctech"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcGEe8u8IzmOoTCBGiwEzWY8wIKSwgNFs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
