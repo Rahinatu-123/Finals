@@ -22,11 +22,16 @@ import 'package:ctech/screens/reset_password_screen.dart';
 import 'package:ctech/models/career.dart';
 import 'firebase_options.dart';
 
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // await Firebase.initializeApp(
+  //   // options: DefaultFirebaseOptions.currentPlatform,
+  // ); // You should include options if using firebase_options.dart
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp();
+  }
 
   runApp(
     MultiProvider(
@@ -42,7 +47,7 @@ void main() async {
           initialData: null,
         ),
       ],
-      child: const MyApp()
+      child: const MyApp(),
     ),
   );
 }

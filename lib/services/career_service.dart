@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/career.dart';
 
 class CareerService {
-  final String baseUrl = 'http://20.251.152.247/career_in_technology/ctech-web/api';
+  final String baseUrl = 'http://20.251.152.247/career_in_technology/ctech-web/api/career_profiles.php';
 
   Future<List<Career>> fetchCareers() async {
     try {
