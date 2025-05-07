@@ -166,53 +166,93 @@ class _TechWordsScreenState extends State<TechWordsScreen> {
           }
 
           final techWords = snapshot.data!;
-          return ListView.builder(
-            itemCount: techWords.length,
-            itemBuilder: (context, index) {
-              final word = techWords[index];
-              return Card(
-                margin: const EdgeInsets.all(8.0),
-                child: ExpansionTile(
-                  leading: CircleAvatar(
-                    child: Text(word.word[0].toUpperCase()),
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                  title: Text(
-                    word.word,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(word.category),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Meaning:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor,
+          return Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  itemCount: techWords.length,
+                  itemBuilder: (context, index) {
+                    final word = techWords[index];
+                    return Card(
+                      margin: const EdgeInsets.all(16.0),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ListTile(
+                              leading: CircleAvatar(
+                                child: Text(word.word[0].toUpperCase()),
+                                backgroundColor: Theme.of(context).primaryColor,
+                                foregroundColor: Colors.white,
+                              ),
+                              title: Text(
+                                word.word,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                              ),
+                              subtitle: Text(word.category),
                             ),
-                          ),
-                          Text(word.meaning),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Example:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor,
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Meaning:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).primaryColor,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    word.meaning,
+                                    style: const TextStyle(fontSize: 16, height: 1.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Example:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).primaryColor,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    word.example,
+                                    style: const TextStyle(fontSize: 16, height: 1.5, fontStyle: FontStyle.italic),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          Text(word.example),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
+                  scrollDirection: Axis.vertical,
+                  pageSnapping: true,
                 ),
-              );
-            },
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  techWords.length,
+                  (index) => Container(
+                    width: 8.0,
+                    height: 8.0,
+                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Theme.of(context).primaryColor.withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           );
         },
       ),

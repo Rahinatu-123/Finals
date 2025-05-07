@@ -173,12 +173,36 @@ class _CareerScreenState extends State<CareerScreen> {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: careers.length,
-            itemBuilder: (context, index) {
-              return _buildCareerCard(careers[index]);
-            },
+          return Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  itemCount: careers.length,
+                  itemBuilder: (context, index) {
+                    return _buildCareerCard(careers[index]);
+                  },
+                  scrollDirection: Axis.vertical,
+                  pageSnapping: true,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  careers.length,
+                  (index) => Container(
+                    width: 8.0,
+                    height: 8.0,
+                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Theme.of(context).primaryColor.withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           );
         },
       ),

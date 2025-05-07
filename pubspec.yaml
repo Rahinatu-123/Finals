@@ -42,13 +42,14 @@ dependencies:
   flutter_spinkit: ^5.2.0
   fluttertoast: ^8.2.4
 
-    # Firebase Core
+  # Firebase Core
   firebase_core: ^2.24.0
 
   # Optional: Add the Firebase services you need
   firebase_auth: ^4.17.4
   cloud_firestore: ^4.15.4
   firebase_storage: ^11.6.4
+  image_picker: ^1.0.4
 
 dev_dependencies:
   flutter_test:

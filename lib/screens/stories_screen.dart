@@ -166,52 +166,81 @@ class _StoriesScreenState extends State<StoriesScreen> {
           }
 
           final stories = snapshot.data!;
-          return ListView.builder(
-            itemCount: stories.length,
-            itemBuilder: (context, index) {
-              final story = stories[index];
-              return Card(
-                margin: const EdgeInsets.all(8.0),
-                child: ExpansionTile(
-                  leading: CircleAvatar(
-                    child: Text(story.author[0].toUpperCase()),
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                  title: Text(
-                    story.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text('By ${story.author} • ${story.date}'),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            story.content,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 8),
-                          Chip(
-                            label: Text(story.category),
-                            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                          ),
-                        ],
+          return Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  itemCount: stories.length,
+                  itemBuilder: (context, index) {
+                    final story = stories[index];
+                    return Card(
+                      margin: const EdgeInsets.all(16.0),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ListTile(
+                              leading: CircleAvatar(
+                                child: Text(story.author[0].toUpperCase()),
+                                backgroundColor: Theme.of(context).primaryColor,
+                                foregroundColor: Colors.white,
+                              ),
+                              title: Text(
+                                story.title,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                              ),
+                              subtitle: Text('By ${story.author} • ${story.date}'),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    story.content,
+                                    style: const TextStyle(fontSize: 16, height: 1.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Chip(
+                                    label: Text(story.category),
+                                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
+                  scrollDirection: Axis.vertical,
+                  pageSnapping: true,
                 ),
-              );
-            },
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  stories.length,
+                  (index) => Container(
+                    width: 8.0,
+                    height: 8.0,
+                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Theme.of(context).primaryColor.withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: _showAddStoryDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('Share a Story'),
+        child: const Icon(Icons.add),
       ),
     );
   }

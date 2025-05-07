@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../widgets/custom_button.dart';
 import '../services/auth.dart';
 
@@ -74,10 +77,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _pickImage() async {
-    // TODO: Implement image picking
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Image picking will be implemented')),
-    );
+    try {
+      final ImagePicker picker = ImagePicker();
+      
+      // Show dialog for choosing between camera and gallery
+      final source = await showDialog<ImageSource>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Select Image Source'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Take Photo'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Choose from Gallery'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      if (source == null) return;
+
+      final XFile? image = await picker.pickImage(
+        source: source,
+        imageQuality: 70,
+        maxWidth: 600,
+      );
+
+      if (image == null) return;
+
+      // Upload image to Firebase Storage
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_images')
+          .child('${context.read<AuthService>().currentUser?.uid ?? 'unknown'}.jpg');
+
+      final File imageFile = File(image.path);
+      await storageRef.putFile(imageFile);
+      final downloadUrl = await storageRef.getDownloadURL();
+
+      // Update profile with new image URL
+      setState(() {
+        _imageUrl = downloadUrl;
+      });
+
+      // Update user profile in Firebase Auth
+      await context.read<AuthService>().updateProfile(
+        photoURL: downloadUrl,
+      );
+
+      // Show success message
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile picture updated successfully')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating profile picture: ${e.toString()}')),
+      );
+    }
   }
 
   Widget _buildActivityCard(
@@ -136,7 +204,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           CircleAvatar(
                             radius: 48,
                             backgroundColor: Theme.of(context).colorScheme.primary,
-                            backgroundImage: _imageUrl != null ? NetworkImage(_imageUrl!) : null,
+                            backgroundImage: _imageUrl != null
+                                ? _imageUrl!.startsWith('http')
+                                    ? NetworkImage(_imageUrl!) as ImageProvider
+                                    : FileImage(File(_imageUrl!))
+                                : null,
                             child: _imageUrl == null
                                 ? const Icon(
                                     Icons.person,
@@ -154,6 +226,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).colorScheme.primary,
                                   shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      spreadRadius: 1,
+                                      blurRadius: 3,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
                                 ),
                                 child: const Icon(
                                   Icons.camera_alt,
